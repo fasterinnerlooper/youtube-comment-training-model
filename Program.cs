@@ -6,6 +6,8 @@ using OpenAI;
 using OpenAI.Managers;
 using OpenAI.ObjectModels;
 using OpenAI.ObjectModels.RequestModels;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Configuration;
 
 namespace YoutubeCommentTrainingModel
 {
@@ -13,20 +15,34 @@ namespace YoutubeCommentTrainingModel
     {
         static void Main(string[] args)
         {
-            if(args.Length==0) {
-                Console.WriteLine("Usage: CommentSafety videoId youtube-api-key openai-api-key");
-                return;
+            HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
+
+            builder.Configuration.Sources.Clear();
+
+            IHostEnvironment env = builder.Environment;
+
+            builder.Configuration
+                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+                .AddJsonFile($"appsettings.{env.EnvironmentName}.json", true, true);
+
+            AppOptions options = new();
+            builder.Configuration.GetSection(nameof(AppOptions))
+                .Bind(options);
+            foreach ((string key, string? value) in
+                builder.Configuration.AsEnumerable().Where(t => t.Value is not null))
+            {
+                Console.WriteLine($"{key}={value}");
             }
 
             var comments = new List<string>();
 
             var youtubeService = new YouTubeService(new BaseClientService.Initializer()
             {
-                ApiKey = args[1]
+                ApiKey = options.YoutubeApiKey
             });
 
             // Define the video ID you want to retrieve comments for
-            string videoId = args[0];
+            string videoId = options.VideoId;
 
             // Create a request to list comment threads
             var request = youtubeService.CommentThreads.List("id,replies,snippet");
@@ -45,7 +61,7 @@ namespace YoutubeCommentTrainingModel
                                   select snippet?.ToString() ?? "");
                 var openAiService = new OpenAIService(new OpenAiOptions()
                 {
-                    ApiKey = args[2]
+                    ApiKey = options.OpenAiKey
                 });
 
                 var messages = new List<ChatMessage>
@@ -60,9 +76,10 @@ namespace YoutubeCommentTrainingModel
                     Model = Models.Gpt_3_5_Turbo
                 });
 
-                if(completionResult.Result.Successful)
+                if (completionResult.Result.Successful)
                 {
-                    completionResult.Result.Choices.ForEach((choice) =>{
+                    completionResult.Result.Choices.ForEach((choice) =>
+                    {
                         Console.WriteLine(choice.Message.Content);
                     });
                 }
@@ -72,6 +89,13 @@ namespace YoutubeCommentTrainingModel
             {
                 Console.WriteLine("An error occurred: " + ex.Message);
             }
+        }
+
+        private class AppOptions
+        {
+            public string VideoId { get; set; }
+            public string YoutubeApiKey { get; set; }
+            public string OpenAiKey { get; set; }
         }
     }
 }

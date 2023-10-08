@@ -13,6 +13,7 @@
     <PackageReference Include="betalgo.openai" Version="7.1.5" />
     <PackageReference Include="google.apis" Version="1.62.0" />
     <PackageReference Include="Google.Apis.YouTube.v3" Version="1.62.0.3169" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="7.0.0" />
     <PackageReference Include="newtonsoft.json" Version="13.0.3" />
   </ItemGroup>
 
