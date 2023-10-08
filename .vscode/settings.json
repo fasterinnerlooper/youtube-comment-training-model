@@ -2,5 +2,6 @@
   "cSpell.words": [
     "Betalgo",
     "Newtonsoft"
-  ]
+  ],
+  "python.analysis.typeCheckingMode": "basic"
 }
